@@ -24,12 +24,27 @@ function saveLocal() {
     }));
   } catch (e) { /* 配额满了就算了 */ }
 }
+/* 老版本生成的 id 不是 UUID（会被数据库拒绝），这里统一换成真 UUID */
+function normalizeIds(list) {
+  var changed = false;
+  (list || []).forEach(function (t) {
+    if (!t || isUuid(t.id)) return;
+    t.id = uid();
+    changed = true;
+  });
+  return changed;
+}
+
 function loadLocal(u) {
   try {
     var raw = localStorage.getItem(lkey(u));
     if (!raw) return null;
     var o = JSON.parse(raw);
-    return { tasks: o.tasks || [], tags: o.tags || CFG.defaultTags.slice(), deleted: o.deleted || [] };
+    var tasks = o.tasks || [];
+    if (normalizeIds(tasks)) {                 // 修好立刻回写，避免反复改 id
+      try { localStorage.setItem(lkey(u), JSON.stringify({ tasks: tasks, tags: o.tags || [], deleted: o.deleted || [] })); } catch (e) {}
+    }
+    return { tasks: tasks, tags: o.tags || CFG.defaultTags.slice(), deleted: o.deleted || [] };
   } catch (e) { return null; }
 }
 
@@ -75,6 +90,7 @@ function taskToRow(t) {
     tags: t.tags || [],
     done: t.done,
     done_at: t.doneAt || null,
+    created_at: t.createdAt || t.updatedAt || new Date().toISOString(),
     updated_at: t.updatedAt || new Date().toISOString()
   };
 }
@@ -117,14 +133,32 @@ async function pullRemote() {
   }
 }
 
+/* 同步失败时通知 UI（只提示一次，别刷屏） */
+var syncErrorHook = null;
+function onSyncError(fn) { syncErrorHook = fn; }
+function reportSyncError(msg) { if (syncErrorHook) syncErrorHook(msg); }
+
 async function pushTask(t) {
   if (!sb) return;
+  if (!isUuid(t.id)) t.id = uid();
   setSync('syncing');
   try {
     var r = await sb.from('todos').upsert(taskToRow(t), { onConflict: 'id' });
-    setSync(r.error ? 'error' : 'ok');
-    if (r.error) console.warn('push failed:', r.error.message);
+    if (r.error) {
+      console.warn('push failed:', r.error.message);
+      reportSyncError(r.error.message);
+      setSync('error');
+    } else {
+      setSync('ok');
+    }
   } catch (e) { setSync('error'); }
+}
+
+/* 登录后把本地全部任务推一遍，保证两个设备能收敛 */
+async function pushAll() {
+  if (!sb) return;
+  for (var i = 0; i < DB.tasks.length; i++) await pushTask(DB.tasks[i]);
+  for (var j = 0; j < DB.tags.length; j++) await pushTag(DB.tags[j]);
 }
 
 async function removeRemote(id) {

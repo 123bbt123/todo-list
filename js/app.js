@@ -53,7 +53,8 @@
     $('#screen-login').classList.add('hidden');
     $('#screen-home').classList.remove('hidden');
     renderHome();
-    pullRemote().then(function (ok) {
+    pullRemote().then(async function (ok) {
+      if (ok) await pushAll();     // 本地补推一遍，保证两端收敛
       renderHome();
       if (!ok) {
         setSync('off');
@@ -490,7 +491,14 @@
   onSync(function (s) {
     var dot = $('#sync-dot');
     dot.className = 'sync-dot ' + s;
-    dot.title = s === 'ok' ? '已同步到云端' : s === 'syncing' ? '同步中' : s === 'error' ? '云端未就绪（本地可用）' : '离线';
+    dot.title = s === 'ok' ? '已同步到云端' : s === 'syncing' ? '同步中' : s === 'error' ? '同步失败（数据只在本地）' : '离线';
+  });
+
+  var syncErrShown = false;
+  onSyncError(function (msg) {
+    if (syncErrShown) return;
+    syncErrShown = true;
+    toast('没同步上去：' + (msg || '云端写入失败'));
   });
 
   /* ---------------- 启动 ---------------- */

@@ -31,7 +31,27 @@ function addDays(s, n) { var d = parseYmd(s); d.setDate(d.getDate() + n); return
 var WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 function fmtDateCN(s) { var d = parseYmd(s); return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + WEEK[d.getDay()]; }
 function fmtMonthCN(y, m) { return y + '年' + (m + 1) + '月'; }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+/* 必须是真正的 UUID —— 数据库 id 列是 uuid 类型，非 UUID 会被拒绝 */
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
+function uid() {
+  try { if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  try {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      var b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      var h = '';
+      for (var i = 0; i < 16; i++) h += (b[i] < 16 ? '0' : '') + b[i].toString(16);
+      return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+    }
+  } catch (e) {}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0;
+    return ((c === 'x') ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
 
 /* ---------- 紧急度 ----------
    返回 0~1：0 = 没 deadline / 很远（白），1 = 已过期或马上到期（大红） */
