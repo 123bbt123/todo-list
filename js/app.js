@@ -118,7 +118,7 @@
     $('#tagbar').innerHTML = html;
   }
 
-  function cardHtml(t) {
+  function cardHtml(t, viewDate) {
     var u = urgencyOf(t.deadline);
     var col = t.deadline ? urgencyColor(u) : '#FFFFFF';
     var txt = urgencyTextColor(u);
@@ -128,6 +128,9 @@
     h += '<div class="card-main">';
     h += '<div class="card-title">' + esc(t.title) + '</div>';
     var meta = '';
+    if (isCarried(t, viewDate)) {
+      meta += '<span class="pill carry">↻ 顺延 · 原定 ' + esc(fmtDateCN(t.date).split(' ')[0]) + '</span>';
+    }
     if (t.deadline) {
       meta += '<span class="pill" style="background:' + col + ';color:' + txt + ';border:1px solid rgba(0,0,0,.08)">⏰ ' +
         esc(deadlineText(t.deadline)) + '</span>';
@@ -160,11 +163,14 @@
     }
     var undone = list.filter(function (t) { return !t.done; });
     var done = list.filter(function (t) { return t.done; });
-    var html = '<div class="day-head"><span>待办 ' + undone.length + ' · 共 ' + all.length + ' 项</span><span>' +
+    var carried = undone.filter(function (t) { return isCarried(t, DB.date); }).length;
+    var html = '<div class="day-head"><span>待办 ' + undone.length + ' · 共 ' + all.length + ' 项' +
+      (carried ? ' · 顺延 ' + carried : '') + '</span><span>' +
       (DB.filter === '全部' ? '' : '# ' + esc(DB.filter)) + '</span></div>';
-    html += undone.map(cardHtml).join('');
+    html += undone.map(function (t) { return cardHtml(t, DB.date); }).join('');
     if (done.length) {
-      html += '<div class="done-head">已完成 ' + done.length + '</div>' + done.map(cardHtml).join('');
+      html += '<div class="done-head">已完成 ' + done.length + '</div>' +
+        done.map(function (t) { return cardHtml(t, DB.date); }).join('');
     }
     page.innerHTML = html;
   }
@@ -541,8 +547,18 @@
   /* ---------------- 启动 ---------------- */
   $('#logo-num').textContent = new Date().getDate();
   renderRecent();
+
+  $('#btn-switch').onclick = function () {
+    if (!confirm('切换用户？当前会退出登录，数据不会丢。')) return;
+    try { localStorage.removeItem('tdl_user'); } catch (e) {}
+    location.reload();
+  };
+
   try {
     var last = localStorage.getItem('tdl_user');
-    if (last) $('#login-input').value = last;
+    if (last) {
+      $('#login-input').value = last;
+      doLogin();                 // 有上次的用户就直接进首页，不用再输一遍
+    }
   } catch (e) {}
 })();

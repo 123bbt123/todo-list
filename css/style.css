@@ -95,6 +95,11 @@ textarea.input{resize:vertical;line-height:1.55}
 }
 .brand{font-size:17px;font-weight:800;letter-spacing:1.5px;color:var(--ink)}
 .top-right{display:flex;align-items:center;gap:12px}
+.switch-btn{
+  width:28px;height:28px;border-radius:50%;background:#F2F6F5;color:var(--ink-2);
+  font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center
+}
+.switch-btn:active{transform:scale(.9)}
 .sync-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);transition:background .25s}
 .sync-dot.ok{background:var(--mint)}
 .sync-dot.syncing{background:var(--butter);animation:blink .9s infinite}
@@ -175,6 +180,7 @@ textarea.input{resize:vertical;line-height:1.55}
   border:1px solid rgba(0,0,0,.06);white-space:nowrap;color:#3E4A46
 }
 .pill.tagpill{background:#F2F6F5;color:var(--ink-2)}
+.pill.carry{background:#FFF6E3;color:#B5762A;border:1px solid rgba(0,0,0,.06)}
 .card-note{margin-top:9px;font-size:13px;color:var(--ink-2);line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .card-note a{color:#3FA98A;text-decoration:none;border-bottom:1px dashed #9FD9C6}
 .attach-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}

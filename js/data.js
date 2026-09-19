@@ -223,8 +223,18 @@ function addTag(name) {
 }
 
 /* ---------- 查询 ---------- */
+/* 某一天要显示的任务。
+   规则：当天自己的任务 + 之前几天没做完的（自动顺延到今天，直到做完为止）。
+   不做复制，只有一条记录，所以在原定那天也还看得到。 */
 function tasksOf(date) {
-  return DB.tasks.filter(function (t) { return t.date === date; });
+  var today = todayStr();
+  return DB.tasks.filter(function (t) {
+    if (t.date === date) return true;
+    return date === today && !t.done && t.date < today;
+  });
+}
+function isCarried(t, viewDate) {
+  return !t.done && t.date < viewDate;
 }
 function visibleTasks(date) {
   var list = tasksOf(date);
