@@ -16,13 +16,20 @@ function setSync(s) { SYNC = s; listeners.forEach(function (f) { f(s); }); }
 
 /* ---------- 本地 ---------- */
 function lkey(u) { return 'tdl_data_' + u; }
+var storageWarnHook = null;
+function onStorageWarn(fn) { storageWarnHook = fn; }
+
 function saveLocal() {
   if (!DB.user) return;
   try {
     localStorage.setItem(lkey(DB.user), JSON.stringify({
       tasks: DB.tasks, tags: DB.tags, deleted: DB.deleted.slice(-200)
     }));
-  } catch (e) { /* 配额满了就算了 */ }
+  } catch (e) {
+    // 多半是图片太多把 5MB 配额撑爆了。数据还在内存里、也还会推云端，
+    // 但下次打开这台设备可能读不回来，所以要提醒。
+    if (storageWarnHook) storageWarnHook();
+  }
 }
 /* 老版本生成的 id 不是 UUID（会被数据库拒绝），这里统一换成真 UUID */
 function normalizeIds(list) {

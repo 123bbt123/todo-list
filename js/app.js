@@ -54,13 +54,46 @@
     $('#screen-home').classList.remove('hidden');
     renderHome();
     pullRemote().then(async function (ok) {
-      if (ok) await pushAll();     // 本地补推一遍，保证两端收敛
+      if (ok) {
+        await pushAll();            // 本地补推一遍，保证两端收敛
+        await migrateImages();      // 把塞在任务里的图片搬到云存储（桶建好后自动生效）
+      }
       renderHome();
       if (!ok) {
         setSync('off');
         toast(sb ? '云端表还没建好，先存本地 · 建好后自动同步' : '离线模式，数据存在这台设备上');
       }
     });
+  }
+
+  /* 备注里以 base64 形式存着的图片，一旦有了存储桶就自动搬上去 */
+  async function migrateImages() {
+    if (!sb) return;
+    var changed = false;
+    for (var i = 0; i < DB.tasks.length; i++) {
+      var imgs = (DB.tasks[i].note && DB.tasks[i].note.images) || [];
+      for (var j = 0; j < imgs.length; j++) {
+        if (!/^data:image\//i.test(imgs[j])) continue;
+        var url = await uploadImage(dataURLtoBlob(imgs[j]));
+        if (url) { imgs[j] = url; changed = true; }
+      }
+    }
+    if (changed) {
+      DB.tasks.forEach(function (t) { saveTask(t); });
+      renderHome();
+      toast('备注图片已搬到云存储 🖼');
+    }
+  }
+
+  function dataURLtoBlob(dataUrl) {
+    try {
+      var parts = dataUrl.split(',');
+      var mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+      var bin = atob(parts[1]);
+      var arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    } catch (e) { return null; }
   }
 
   /* ---------------- 首页 ---------------- */
@@ -499,6 +532,10 @@
     if (syncErrShown) return;
     syncErrShown = true;
     toast('没同步上去：' + (msg || '云端写入失败'));
+  });
+
+  onStorageWarn(function () {
+    toast('本地空间满了（图片太多）· 建个 todo-images 存储桶就没事了');
   });
 
   /* ---------------- 启动 ---------------- */
