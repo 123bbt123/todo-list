@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#F2FBF7">
+<title>TO DO LIST</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%234FD1A5'/%3E%3Cpath d='M26 34h48M26 52h34M26 70h22' stroke='white' stroke-width='9' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ 登录 ============ -->
+  <section id="screen-login" class="screen screen-login">
+    <div class="login-wrap">
+      <div class="logo-cal">
+        <span class="lc-top">TO DO</span>
+        <span class="lc-num" id="logo-num">19</span>
+      </div>
+      <h1 class="login-title">今天也要轻轻的 🌿</h1>
+      <p class="login-sub">输入用户名就开始，不用密码</p>
+      <input id="login-input" class="input input-lg" type="text" placeholder="你的用户名" autocomplete="off" maxlength="20" spellcheck="false">
+      <button id="login-btn" class="btn btn-primary btn-block">开 始</button>
+      <div id="login-recent" class="recent"></div>
+    </div>
+  </section>
+
+  <!-- ============ 首页 ============ -->
+  <section id="screen-home" class="screen screen-home hidden">
+
+    <header class="topbar">
+      <div class="brand">TO DO LIST</div>
+      <div class="top-right">
+        <span id="sync-dot" class="sync-dot" title="同步状态"></span>
+        <button id="fab-add" class="cal-fab" aria-label="添加任务">
+          <span class="cf-top" id="cf-month">9月</span>
+          <span class="cf-num" id="cf-num">19</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="datebar">
+      <button class="nav-arrow" id="btn-prev" aria-label="前一天">‹</button>
+      <button class="date-title" id="btn-date">9月19日 周六</button>
+      <button class="nav-arrow" id="btn-next" aria-label="后一天">›</button>
+      <button class="btn-today" id="btn-today">今天</button>
+    </div>
+
+    <div class="tagbar" id="tagbar"></div>
+
+    <main class="viewport" id="viewport">
+      <div class="page" id="page"></div>
+    </main>
+
+    <div class="swipe-hint" id="swipe-hint">← 左右滑动看其他天 →</div>
+  </section>
+
+</div>
+
+<!-- ============ 日历弹层 ============ -->
+<div id="modal-cal" class="modal hidden">
+  <div class="mask" data-close></div>
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="mini" id="cal-prev">‹</button>
+      <div class="head-title" id="cal-title">2026年9月</div>
+      <button class="mini" id="cal-next">›</button>
+    </div>
+    <div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-foot">选一天，然后写下要做的事 ✿</div>
+  </div>
+</div>
+
+<!-- ============ 任务弹层 ============ -->
+<div id="modal-task" class="modal hidden">
+  <div class="mask" data-close></div>
+  <div class="sheet sheet-tall">
+    <div class="sheet-head">
+      <div class="head-title" id="task-head">添加任务</div>
+      <button class="mini" data-close>✕</button>
+    </div>
+
+    <div class="sheet-body">
+
+      <div class="field">
+        <div class="lab">任务名称 <i class="req">*</i></div>
+        <input id="t-title" class="input" type="text" placeholder="比如：给绿萝浇水" maxlength="60">
+      </div>
+
+      <div class="field">
+        <div class="lab">标签</div>
+        <div class="chip-wrap" id="t-tags"></div>
+      </div>
+
+      <div class="field">
+        <div class="lab">Deadline</div>
+        <div class="quick">
+          <button class="qbtn" data-quick="today">当天</button>
+          <button class="qbtn" data-quick="week">本周</button>
+          <button class="qbtn" data-quick="month">本月</button>
+          <button class="qbtn qbtn-clear" data-quick="clear">清除</button>
+        </div>
+        <div class="row2">
+          <input id="t-date" class="input" type="date">
+          <input id="t-time" class="input" type="time">
+        </div>
+        <div class="urgency-box">
+          <div class="urg-head">
+            <span class="lab">紧急程度（自动跟随 deadline）</span>
+            <span class="u-chip" id="u-chip">未设置</span>
+          </div>
+          <div class="ubar"><div class="ubar-fill" id="ubar-fill"></div></div>
+          <div class="ubar-scale"><span>还很远</span><span>有点紧</span><span>火烧眉毛</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="lab">备注 <span class="lab-tip">文字 / 图片 / 链接</span></div>
+        <textarea id="t-note" class="input" rows="3" placeholder="想到什么就写什么…"></textarea>
+        <div class="note-tools">
+          <button class="tool" id="t-img">🖼 添加图片</button>
+          <button class="tool" id="t-link">🔗 添加链接</button>
+        </div>
+        <div class="link-row hidden" id="t-linkrow">
+          <input id="t-linkurl" class="input" type="url" placeholder="https://...">
+          <button class="btn btn-tiny" id="t-linkadd">添加</button>
+        </div>
+        <div class="attach" id="t-attach"></div>
+      </div>
+
+    </div>
+
+    <div class="sheet-foot">
+      <button class="btn btn-danger hidden" id="t-del">删除</button>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-primary" id="t-save">保 存</button>
+    </div>
+  </div>
+  <input type="file" id="t-file" accept="image/*" multiple hidden>
+</div>
+
+<!-- ============ 图片查看 ============ -->
+<div id="modal-img" class="modal hidden">
+  <div class="mask mask-black" data-close></div>
+  <img id="img-big" alt="">
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="./js/config.js"></script>
+<script src="./js/data.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
